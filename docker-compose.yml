@@ -1,0 +1,63 @@
+name: agent-lab
+
+# Usage:
+#   docker compose up -d --wait            # core stack: postgres + redis
+#   docker compose --profile gpu up gpu-check   # one-shot nvidia-smi in a CUDA container
+#
+# Ports bind to 127.0.0.1 only — nothing here is exposed to the LAN.
+
+services:
+  postgres:
+    image: pgvector/pgvector:0.8.7-pg18-trixie
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agentlab}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-agentlab}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      # Postgres 18+ images keep PGDATA under /var/lib/postgresql/<major>/docker,
+      # so mount the parent dir (not .../data as in pg17 and earlier).
+      - pgdata:/var/lib/postgresql
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:8.8.4-alpine
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    command: ["sh", "-c", "exec redis-server --appendonly yes --requirepass \"$$REDIS_PASSWORD\""]
+    ports:
+      - "127.0.0.1:${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" --no-auth-warning ping | grep -q PONG"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # --- gpu profile -----------------------------------------------------------
+  # Services that need the 3090 go in this profile. They only start with
+  # `--profile gpu`, so the core stack still runs on machines without a GPU.
+  gpu-check:
+    profiles: ["gpu"]
+    image: ${CUDA_IMAGE:-nvidia/cuda:13.4.3-base-ubuntu24.04}
+    command: ["nvidia-smi"]
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+
+volumes:
+  pgdata:
+  redisdata:
