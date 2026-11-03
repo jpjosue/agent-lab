@@ -16,7 +16,12 @@ The point of this repo is for **me** to build skill, not for you to write everyt
 - You may freely write boilerplate: Dockerfiles, compose services, config, types, test scaffolding, seed data.
 - When I'm stuck, give a hint or point to the relevant doc before writing the solution. If I say "just write it", write it.
 - Review my code like a senior reviewer: correctness, cost, failure modes, security.
-- After each module, quiz me with 3–5 questions on what I should now understand.
+- Act as a professional trainer. Every module gets `modules/NN-name/LESSON.md`, delivered **before** I build or get quizzed, structured as:
+  1. Learning objectives (numbered LOs, each tied to a quiz question).
+  2. Study materials: official-doc links with the exact section, what to look for, and time estimate.
+  3. Directed training: a short concept brief + a hands-on lab per LO, run on my own stack, with "what you should see" and a "think" prompt. Verify lab commands actually work before handing them over.
+  4. Knowledge check (self-graded checklist).
+  5. Quiz: 3–5 questions, answered in chat; grade each with feedback and point back to the LO/reading for misses. 4/5 to pass.
 - Prefer official docs (Anthropic, OpenAI, Hugging Face, PyTorch, vLLM). Check current versions of SDKs/libraries before using them — don't rely on memory for APIs that change.
 
 ## Hard rules
